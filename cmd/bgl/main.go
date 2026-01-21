@@ -1,9 +1,10 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
+
+	"github.com/dannygim/bgl/internal/auth"
 )
 
 const (
@@ -11,32 +12,78 @@ const (
 )
 
 func main() {
-	// Define flags
-	var help bool
-	flag.BoolVar(&help, "h", false, "show help")
-	flag.BoolVar(&help, "help", false, "show help")
-	
-	// Custom usage function
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "bgl - A command line tool for Backlog\n\n")
-		fmt.Fprintf(os.Stderr, "Usage:\n")
-		fmt.Fprintf(os.Stderr, "  bgl [options]\n\n")
-		fmt.Fprintf(os.Stderr, "Options:\n")
-		fmt.Fprintf(os.Stderr, "  -h, --help     Show this help message\n")
-		fmt.Fprintf(os.Stderr, "\nVersion: %s\n", version)
-	}
-	
-	flag.Parse()
-	
-	// Show help if requested
-	if help {
-		flag.Usage()
+	if len(os.Args) < 2 {
+		printUsage()
 		os.Exit(0)
 	}
-	
-	// Default behavior when no flags are provided
-	if flag.NFlag() == 0 {
-		fmt.Println("bgl - A command line tool for Backlog")
-		fmt.Println("Run 'bgl -h' or 'bgl --help' for usage information")
+
+	switch os.Args[1] {
+	case "-h", "--help", "help":
+		printUsage()
+	case "-v", "--version", "version":
+		fmt.Printf("bgl version %s\n", version)
+	case "auth":
+		handleAuth()
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", os.Args[1])
+		printUsage()
+		os.Exit(1)
 	}
+}
+
+func printUsage() {
+	fmt.Println("bgl - A command line tool for Backlog")
+	fmt.Println()
+	fmt.Println("Usage:")
+	fmt.Println("  bgl <command> [arguments]")
+	fmt.Println()
+	fmt.Println("Commands:")
+	fmt.Println("  auth login <space>  Login to Backlog using OAuth 2.0")
+	fmt.Println("                      <space> must be <your-space-key>.backlog.com or <your-space-key>.backlog.jp")
+	fmt.Println("  help                Show this help message")
+	fmt.Println("  version             Show version information")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  -h, --help          Show this help message")
+	fmt.Println("  -v, --version       Show version information")
+	fmt.Println()
+	fmt.Printf("Version: %s\n", version)
+}
+
+func handleAuth() {
+	if len(os.Args) < 3 {
+		printAuthUsage()
+		os.Exit(1)
+	}
+
+	switch os.Args[2] {
+	case "login":
+		if len(os.Args) < 4 {
+			fmt.Fprintln(os.Stderr, "Error: space is required")
+			fmt.Fprintln(os.Stderr, "Usage: bgl auth login <space>")
+			fmt.Fprintln(os.Stderr, "Example: bgl auth login myspace.backlog.com")
+			os.Exit(1)
+		}
+		space := os.Args[3]
+		if err := auth.Login(space); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+	case "-h", "--help", "help":
+		printAuthUsage()
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown auth command: %s\n", os.Args[2])
+		printAuthUsage()
+		os.Exit(1)
+	}
+}
+
+func printAuthUsage() {
+	fmt.Println("Usage: bgl auth <command>")
+	fmt.Println()
+	fmt.Println("Commands:")
+	fmt.Println("  login <space>  Login to Backlog using OAuth 2.0")
+	fmt.Println()
+	fmt.Println("Arguments:")
+	fmt.Println("  <space>        Your Backlog space (e.g., myspace.backlog.com or myspace.backlog.jp)")
 }
