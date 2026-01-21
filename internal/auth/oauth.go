@@ -200,7 +200,7 @@ func Login() error {
 	space := m.textInput.Value()
 
 	if config.ClientID == "" || config.ClientSecret == "" {
-		return fmt.Errorf("ClientID and ClientSecret are not set. Please build with proper ldflags")
+		return fmt.Errorf("OAuth client credentials are not configured. Please build with the required configuration flags")
 	}
 
 	baseURL := getBacklogBaseURL(space)
