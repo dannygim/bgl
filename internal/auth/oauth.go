@@ -272,16 +272,20 @@ func Login() error {
 		fmt.Printf("Failed to open browser: %v\n", err)
 	}
 
+	// Ensure the HTTP server is shut down on all exit paths after this point.
+	shutdownCtx, shutdownCancel := context.WithCancel(context.Background())
+	defer shutdownCancel()
+	go func() {
+		<-shutdownCtx.Done()
+		_ = server.Shutdown(context.Background())
+	}()
+
 	sp := newSpinnerModel("Waiting for authentication...", resultChan)
 	p = tea.NewProgram(sp)
 	finalSpinnerModel, err := p.Run()
 	if err != nil {
-		server.Shutdown(context.Background())
 		return fmt.Errorf("spinner error: %w", err)
 	}
-
-	server.Shutdown(context.Background())
-
 	sm := finalSpinnerModel.(spinnerModel)
 	if sm.err != nil {
 		return sm.err
