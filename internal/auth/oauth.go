@@ -12,6 +12,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/dannygim/bgl/internal/config"
 )
 
@@ -49,11 +53,151 @@ func generateState() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-// Login performs the OAuth 2.0 login flow.
-func Login(space string) error {
-	if err := ValidateSpace(space); err != nil {
-		return err
+// inputModel is the bubbletea model for text input.
+type inputModel struct {
+	textInput textinput.Model
+	err       error
+	done      bool
+	cancelled bool
+}
+
+func newInputModel() inputModel {
+	ti := textinput.New()
+	ti.Placeholder = "myspace.backlog.com"
+	ti.Focus()
+	ti.CharLimit = 100
+	ti.Width = 40
+	return inputModel{
+		textInput: ti,
 	}
+}
+
+func (m inputModel) Init() tea.Cmd {
+	return textinput.Blink
+}
+
+func (m inputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "enter":
+			value := m.textInput.Value()
+			if err := ValidateSpace(value); err != nil {
+				m.err = err
+				return m, nil
+			}
+			m.done = true
+			return m, tea.Quit
+		case "ctrl+c", "esc":
+			m.cancelled = true
+			return m, tea.Quit
+		}
+	}
+
+	m.textInput, cmd = m.textInput.Update(msg)
+	m.err = nil
+	return m, cmd
+}
+
+func (m inputModel) View() string {
+	var s strings.Builder
+	s.WriteString("Enter your Backlog space:\n\n")
+	s.WriteString(m.textInput.View())
+	s.WriteString("\n\n")
+	if m.err != nil {
+		errStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
+		s.WriteString(errStyle.Render(m.err.Error()))
+		s.WriteString("\n")
+	}
+	s.WriteString("(press Enter to confirm, Esc to cancel)\n")
+	return s.String()
+}
+
+// authResult represents the result of the authentication process.
+type authResult struct {
+	code string
+	err  error
+}
+
+// spinnerModel is the bubbletea model for the spinner.
+type spinnerModel struct {
+	spinner    spinner.Model
+	message    string
+	done       bool
+	code       string
+	err        error
+	resultChan <-chan authResult
+}
+
+func newSpinnerModel(message string, resultChan <-chan authResult) spinnerModel {
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	return spinnerModel{
+		spinner:    s,
+		message:    message,
+		resultChan: resultChan,
+	}
+}
+
+func (m spinnerModel) Init() tea.Cmd {
+	return tea.Batch(m.spinner.Tick, m.waitForResult())
+}
+
+type resultMsg authResult
+
+func (m spinnerModel) waitForResult() tea.Cmd {
+	return func() tea.Msg {
+		result := <-m.resultChan
+		return resultMsg(result)
+	}
+}
+
+func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if msg.String() == "ctrl+c" || msg.String() == "q" {
+			m.err = fmt.Errorf("cancelled by user")
+			return m, tea.Quit
+		}
+	case resultMsg:
+		m.done = true
+		m.code = msg.code
+		m.err = msg.err
+		return m, tea.Quit
+	case spinner.TickMsg:
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+	}
+	return m, nil
+}
+
+func (m spinnerModel) View() string {
+	if m.done {
+		return ""
+	}
+	return fmt.Sprintf("%s %s\n", m.spinner.View(), m.message)
+}
+
+// Login performs the OAuth 2.0 login flow.
+func Login() error {
+	// Get space from user input
+	im := newInputModel()
+	p := tea.NewProgram(im)
+	finalModel, err := p.Run()
+	if err != nil {
+		return fmt.Errorf("input error: %w", err)
+	}
+
+	m := finalModel.(inputModel)
+	if m.cancelled {
+		return fmt.Errorf("cancelled by user")
+	}
+
+	space := m.textInput.Value()
 
 	if config.ClientID == "" || config.ClientSecret == "" {
 		return fmt.Errorf("ClientID and ClientSecret are not set. Please build with proper ldflags")
@@ -74,32 +218,33 @@ func Login(space string) error {
 		url.QueryEscape(state),
 	)
 
-	codeChan := make(chan string, 1)
-	errChan := make(chan error, 1)
+	resultChan := make(chan authResult, 1)
 
 	server := &http.Server{
 		Addr: fmt.Sprintf(":%d", callbackPort),
 	}
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		receivedState := r.URL.Query().Get("state")
 		if receivedState != state {
-			errChan <- fmt.Errorf("state mismatch: expected %s, got %s", state, receivedState)
+			resultChan <- authResult{err: fmt.Errorf("state mismatch: expected %s, got %s", state, receivedState)}
 			http.Error(w, "State mismatch", http.StatusBadRequest)
 			return
 		}
 
 		code := r.URL.Query().Get("code")
 		if code == "" {
-			errChan <- fmt.Errorf("no authorization code received")
+			resultChan <- authResult{err: fmt.Errorf("no authorization code received")}
 			http.Error(w, "No authorization code", http.StatusBadRequest)
 			return
 		}
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		fmt.Fprint(w, "<html><body><h1>Login successful!</h1><p>You can close this window.</p></body></html>")
-		codeChan <- code
+		resultChan <- authResult{code: code}
 	})
+	server.Handler = mux
 
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", callbackPort))
 	if err != nil {
@@ -108,33 +253,41 @@ func Login(space string) error {
 
 	go func() {
 		if err := server.Serve(listener); err != http.ErrServerClosed {
-			errChan <- err
+			resultChan <- authResult{err: err}
 		}
 	}()
 
-	fmt.Println("Opening browser for authentication...")
+	go func() {
+		time.Sleep(5 * time.Minute)
+		select {
+		case resultChan <- authResult{err: fmt.Errorf("authentication timeout")}:
+		default:
+		}
+	}()
+
+	fmt.Println("\nOpening browser for authentication...")
 	fmt.Printf("If browser doesn't open automatically, please visit:\n%s\n\n", authURL)
 
 	if err := openBrowser(authURL); err != nil {
 		fmt.Printf("Failed to open browser: %v\n", err)
 	}
 
-	fmt.Println("Waiting for authentication...")
-
-	var code string
-	select {
-	case code = <-codeChan:
-	case err := <-errChan:
+	sp := newSpinnerModel("Waiting for authentication...", resultChan)
+	p = tea.NewProgram(sp)
+	finalSpinnerModel, err := p.Run()
+	if err != nil {
 		server.Shutdown(context.Background())
-		return err
-	case <-time.After(5 * time.Minute):
-		server.Shutdown(context.Background())
-		return fmt.Errorf("authentication timeout")
+		return fmt.Errorf("spinner error: %w", err)
 	}
 
 	server.Shutdown(context.Background())
 
-	token, err := exchangeCode(baseURL, code, redirectURI)
+	sm := finalSpinnerModel.(spinnerModel)
+	if sm.err != nil {
+		return sm.err
+	}
+
+	token, err := exchangeCode(baseURL, sm.code, redirectURI)
 	if err != nil {
 		return fmt.Errorf("failed to exchange code: %w", err)
 	}

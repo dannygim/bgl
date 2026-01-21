@@ -19,20 +19,13 @@ go build -ldflags "-X github.com/dannygim/bgl/internal/config.ClientID=YOUR_CLIE
 Login to Backlog using OAuth 2.0:
 
 ```bash
-bgl auth login <space>
-```
-
-Where `<space>` must be in the format `<your-space-key>.backlog.com` or `<your-space-key>.backlog.jp`. For example:
-
-```bash
-bgl auth login myspace.backlog.com
-# or
-bgl auth login myspace.backlog.jp
+bgl auth login
 ```
 
 This will:
-1. Open your browser for authentication
-2. After successful login, save the access token and refresh token to `~/.config/bgl/config.json`
+1. Prompt you to enter your Backlog space (e.g., `myspace.backlog.com` or `myspace.backlog.jp`)
+2. Open your browser for authentication
+3. After successful login, save the access token and refresh token to `~/.config/bgl/config.json`
 
 ### Other Commands
 

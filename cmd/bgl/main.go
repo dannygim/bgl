@@ -35,17 +35,16 @@ func printUsage() {
 	fmt.Println("bgl - A command line tool for Backlog")
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  bgl <command> [arguments]")
+	fmt.Println("  bgl <command>")
 	fmt.Println()
 	fmt.Println("Commands:")
-	fmt.Println("  auth login <space>  Login to Backlog using OAuth 2.0")
-	fmt.Println("                      <space> must be <your-space-key>.backlog.com or <your-space-key>.backlog.jp")
-	fmt.Println("  help                Show this help message")
-	fmt.Println("  version             Show version information")
+	fmt.Println("  auth login      Login to Backlog using OAuth 2.0")
+	fmt.Println("  help            Show this help message")
+	fmt.Println("  version         Show version information")
 	fmt.Println()
 	fmt.Println("Options:")
-	fmt.Println("  -h, --help          Show this help message")
-	fmt.Println("  -v, --version       Show version information")
+	fmt.Println("  -h, --help      Show this help message")
+	fmt.Println("  -v, --version   Show version information")
 	fmt.Println()
 	fmt.Printf("Version: %s\n", version)
 }
@@ -58,14 +57,7 @@ func handleAuth() {
 
 	switch os.Args[2] {
 	case "login":
-		if len(os.Args) < 4 {
-			fmt.Fprintln(os.Stderr, "Error: space is required")
-			fmt.Fprintln(os.Stderr, "Usage: bgl auth login <space>")
-			fmt.Fprintln(os.Stderr, "Example: bgl auth login myspace.backlog.com")
-			os.Exit(1)
-		}
-		space := os.Args[3]
-		if err := auth.Login(space); err != nil {
+		if err := auth.Login(); err != nil {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
@@ -82,8 +74,5 @@ func printAuthUsage() {
 	fmt.Println("Usage: bgl auth <command>")
 	fmt.Println()
 	fmt.Println("Commands:")
-	fmt.Println("  login <space>  Login to Backlog using OAuth 2.0")
-	fmt.Println()
-	fmt.Println("Arguments:")
-	fmt.Println("  <space>        Your Backlog space (e.g., myspace.backlog.com or myspace.backlog.jp)")
+	fmt.Println("  login    Login to Backlog using OAuth 2.0")
 }
