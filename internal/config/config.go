@@ -11,6 +11,7 @@ type Config struct {
 	Space        string `json:"space"`
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
+	ExpiresAt    int64  `json:"expires_at"`
 }
 
 // configFileName is the name of the config file.
