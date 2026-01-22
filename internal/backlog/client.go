@@ -104,6 +104,16 @@ func (c *Client) GetIssue(issueKeyOrID string) ([]byte, error) {
 	return c.doRequest("GET", "/api/v2/issues/"+issueKeyOrID)
 }
 
+// GetComments retrieves comments for an issue.
+func (c *Client) GetComments(issueKeyOrID string) ([]byte, error) {
+	return c.doRequest("GET", "/api/v2/issues/"+issueKeyOrID+"/comments")
+}
+
+// GetComment retrieves a specific comment by ID.
+func (c *Client) GetComment(issueKeyOrID string, commentID string) ([]byte, error) {
+	return c.doRequest("GET", "/api/v2/issues/"+issueKeyOrID+"/comments/"+commentID)
+}
+
 // Issue represents a Backlog issue.
 type Issue struct {
 	Summary     string    `json:"summary"`
@@ -159,6 +169,78 @@ func FormatIssueMarkdown(issue *Issue) string {
 		sb.WriteString("(no description)")
 	}
 	sb.WriteString("\n")
+
+	return sb.String()
+}
+
+// Comment represents a Backlog comment.
+type Comment struct {
+	ID          int          `json:"id"`
+	Content     string       `json:"content"`
+	CreatedUser *CommentUser `json:"createdUser"`
+	Created     string       `json:"created"`
+}
+
+// CommentUser represents the user who created a comment.
+type CommentUser struct {
+	Name        string `json:"name"`
+	MailAddress string `json:"mailAddress"`
+}
+
+// ParseComment parses the JSON response into a Comment struct.
+func ParseComment(data []byte) (*Comment, error) {
+	var comment Comment
+	if err := json.Unmarshal(data, &comment); err != nil {
+		return nil, fmt.Errorf("failed to parse comment: %w", err)
+	}
+	return &comment, nil
+}
+
+// ParseComments parses the JSON response into a slice of Comment structs.
+func ParseComments(data []byte) ([]Comment, error) {
+	var comments []Comment
+	if err := json.Unmarshal(data, &comments); err != nil {
+		return nil, fmt.Errorf("failed to parse comments: %w", err)
+	}
+	return comments, nil
+}
+
+// FormatCommentMarkdown formats a single comment as Markdown.
+func FormatCommentMarkdown(comment *Comment) string {
+	var sb strings.Builder
+
+	fmt.Fprintf(&sb, "**Comment Id:** %d\n\n", comment.ID)
+
+	sb.WriteString("**User:** ")
+	if comment.CreatedUser != nil {
+		fmt.Fprintf(&sb, "%s<%s>\n\n", comment.CreatedUser.Name, comment.CreatedUser.MailAddress)
+	} else {
+		sb.WriteString("(unknown)\n\n")
+	}
+
+	fmt.Fprintf(&sb, "**Datetime:** %s\n\n", comment.Created)
+
+	sb.WriteString("**Content:**\n")
+	if comment.Content != "" {
+		sb.WriteString(comment.Content)
+	} else {
+		sb.WriteString("(no content)")
+	}
+	sb.WriteString("\n")
+
+	return sb.String()
+}
+
+// FormatCommentsMarkdown formats a list of comments as Markdown.
+func FormatCommentsMarkdown(comments []Comment) string {
+	var sb strings.Builder
+
+	for i, comment := range comments {
+		sb.WriteString(FormatCommentMarkdown(&comment))
+		if i < len(comments)-1 {
+			sb.WriteString("\n---\n\n")
+		}
+	}
 
 	return sb.String()
 }
