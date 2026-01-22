@@ -3,11 +3,12 @@ A command line tool for Backlog
 
 ## Installation
 
-### Build from source
+### Homebrew
 
 ```bash
-# Build with OAuth credentials
-go build -ldflags "-X github.com/dannygim/bgl/internal/config.ClientID=YOUR_CLIENT_ID -X github.com/dannygim/bgl/internal/config.ClientSecret=YOUR_CLIENT_SECRET" -o bgl ./cmd/bgl
+brew tap dannygim/tap                                                                         
+brew install bgl                                                                              
+bgl --help
 ```
 
 ## Usage
