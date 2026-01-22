@@ -10,6 +10,7 @@
 
 # Build artifacts
 /bgl
+dist/
 
 # Test binary, built with `go test -c`
 *.test
@@ -37,4 +38,3 @@ go.work.sum
 # Agent
 .claude
 .agent
-

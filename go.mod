@@ -1,6 +1,6 @@
 module github.com/dannygim/bgl
 
-go 1.24.11
+go 1.25
 
 require (
 	github.com/charmbracelet/bubbles v0.21.1-0.20250623103423-23b8fd6302d7

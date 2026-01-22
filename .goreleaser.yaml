@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: bgl
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: bgl
+    main: ./cmd/bgl
+    binary: bgl
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - Merge pull request
+      - Merge branch
+
+release:
+  github:
+    owner: dannygim
+    name: bgl
+  draft: false
+  prerelease: auto
+
+brews:
+  - name: bgl
+    repository:
+      owner: dannygim
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/dannygim/bgl"
+    description: "Backlog CLI - A command-line interface for Backlog"
+    license: "MIT"
+    install: |
+      bin.install "bgl"
+    test: |
+      system "#{bin}/bgl", "--help"
