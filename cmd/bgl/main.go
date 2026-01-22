@@ -43,7 +43,7 @@ func printUsage() {
 	fmt.Println("Commands:")
 	fmt.Println("  auth login              Login to Backlog using OAuth 2.0")
 	fmt.Println("  auth logout             Logout and remove stored tokens")
-	fmt.Println("  issue view <issueKey>   View an issue by key or ID")
+	fmt.Println("  issue view [--raw] <issueKey>   View an issue by key or ID")
 	fmt.Println("  help                    Show this help message")
 	fmt.Println("  version                 Show version information")
 	fmt.Println()
@@ -152,7 +152,7 @@ func printIssueUsage() {
 	fmt.Println("Usage: bgl issue <command>")
 	fmt.Println()
 	fmt.Println("Commands:")
-	fmt.Println("  view <issueKey>   View an issue by key or ID")
+	fmt.Println("  view [--raw] <issueKey>   View an issue by key or ID")
 }
 
 func printIssueViewUsage() {
