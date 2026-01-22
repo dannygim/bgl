@@ -304,6 +304,7 @@ func Login() error {
 	cfg.Space = space
 	cfg.AccessToken = token.AccessToken
 	cfg.RefreshToken = token.RefreshToken
+	cfg.ExpiresAt = time.Now().UnixMilli() + int64(token.ExpiresIn)*1000
 
 	if err := cfg.Save(); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
@@ -355,6 +356,7 @@ func Logout() error {
 
 	cfg.AccessToken = ""
 	cfg.RefreshToken = ""
+	cfg.ExpiresAt = 0
 
 	if err := cfg.Save(); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
@@ -401,6 +403,7 @@ func RefreshToken() error {
 
 	cfg.AccessToken = token.AccessToken
 	cfg.RefreshToken = token.RefreshToken
+	cfg.ExpiresAt = time.Now().UnixMilli() + int64(token.ExpiresIn)*1000
 
 	if err := cfg.Save(); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
