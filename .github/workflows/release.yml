@@ -31,3 +31,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          CLIENT_ID: ${{ secrets.BACKLOG_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.BACKLOG_CLIENT_SECRET }}

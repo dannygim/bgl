@@ -9,8 +9,10 @@ import (
 	"github.com/dannygim/bgl/internal/issue"
 )
 
-const (
-	version = "0.1.0"
+var (
+	version = "dev"
+	commit  = "unknown"
+	date    = "unknown"
 )
 
 func main() {
@@ -24,6 +26,8 @@ func main() {
 		printUsage()
 	case "-v", "--version", "version":
 		fmt.Printf("bgl version %s\n", version)
+		fmt.Printf("  commit: %s\n", commit)
+		fmt.Printf("  built:  %s\n", date)
 	case "auth":
 		handleAuth()
 	case "issue":
@@ -56,7 +60,7 @@ func printUsage() {
 	fmt.Println("  -h, --help      Show this help message")
 	fmt.Println("  -v, --version   Show version information")
 	fmt.Println()
-	fmt.Printf("Version: %s\n", version)
+	fmt.Printf("Version: %s (commit: %s, built: %s)\n", version, commit, date)
 }
 
 func handleAuth() {
