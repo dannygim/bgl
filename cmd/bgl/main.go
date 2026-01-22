@@ -48,6 +48,7 @@ func printUsage() {
 	fmt.Println("  auth logout             Logout and remove stored tokens")
 	fmt.Println("  issue view [--raw] <issueKey>   View an issue by key or ID")
 	fmt.Println("  comment view [--raw] <issueKey> [commentId]   View comments for an issue")
+	fmt.Println("  comment add [--raw] [--yes] <issueKey> [message]   Add a comment to an issue")
 	fmt.Println("  help                    Show this help message")
 	fmt.Println("  version                 Show version information")
 	fmt.Println()
@@ -179,6 +180,8 @@ func handleComment() {
 	switch os.Args[2] {
 	case "view":
 		handleCommentView()
+	case "add":
+		handleCommentAdd()
 	case "-h", "--help", "help":
 		printCommentUsage()
 	default:
@@ -247,6 +250,67 @@ func printCommentUsage() {
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  view [--raw] <issueKey> [commentId]   View comments for an issue")
+	fmt.Println("  add [--raw] [--yes] <issueKey> [message]   Add a comment to an issue")
+}
+
+func handleCommentAdd() {
+	// Parse arguments: bgl comment add [--raw] [--yes] <issueKey> [message]
+	args := os.Args[3:]
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "Error: issue key is required")
+		printCommentAddUsage()
+		os.Exit(1)
+	}
+
+	opts := comment.AddOptions{}
+	var issueKey string
+	var message string
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--raw":
+			opts.Raw = true
+		case "--yes", "-y":
+			opts.Yes = true
+		case "-h", "--help":
+			printCommentAddUsage()
+			return
+		default:
+			if issueKey == "" {
+				issueKey = args[i]
+			} else if message == "" {
+				message = args[i]
+			} else {
+				fmt.Fprintf(os.Stderr, "Error: unexpected argument: %s\n", args[i])
+				printCommentAddUsage()
+				os.Exit(1)
+			}
+		}
+	}
+
+	if issueKey == "" {
+		fmt.Fprintln(os.Stderr, "Error: issue key is required")
+		printCommentAddUsage()
+		os.Exit(1)
+	}
+
+	if err := comment.Add(issueKey, message, opts); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func printCommentAddUsage() {
+	fmt.Println("Usage: bgl comment add [options] <issueKey> [message]")
+	fmt.Println()
+	fmt.Println("Arguments:")
+	fmt.Println("  issueKey    The issue key (e.g., PROJECT-123) or issue ID")
+	fmt.Println("  message     The comment message (optional, will prompt if omitted)")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  --raw       Output raw JSON response")
+	fmt.Println("  --yes, -y   Skip confirmation prompt")
+	fmt.Println("  -h, --help  Show this help message")
 }
 
 func printCommentViewUsage() {

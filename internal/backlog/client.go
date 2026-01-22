@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -112,6 +113,70 @@ func (c *Client) GetComments(issueKeyOrID string) ([]byte, error) {
 // GetComment retrieves a specific comment by ID.
 func (c *Client) GetComment(issueKeyOrID string, commentID string) ([]byte, error) {
 	return c.doRequest("GET", "/api/v2/issues/"+issueKeyOrID+"/comments/"+commentID)
+}
+
+// doPostRequest performs an HTTP POST request with form data.
+func (c *Client) doPostRequest(path string, data url.Values) ([]byte, error) {
+	apiURL := fmt.Sprintf("https://%s%s", c.cfg.Space, path)
+
+	req, err := http.NewRequest("POST", apiURL, strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.cfg.AccessToken)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Handle authentication errors
+	if resp.StatusCode == http.StatusUnauthorized {
+		wwwAuth := resp.Header.Get("WWW-Authenticate")
+		if strings.Contains(wwwAuth, "The access token expired") {
+			// Token expired - try to refresh
+			if err := auth.RefreshToken(); err != nil {
+				return nil, fmt.Errorf("access token expired and refresh failed: %w. Please run 'bgl auth login'", err)
+			}
+			// Reload config and retry
+			cfg, err := config.Load()
+			if err != nil {
+				return nil, fmt.Errorf("failed to reload config: %w", err)
+			}
+			c.cfg = cfg
+			return c.doPostRequest(path, data)
+		}
+		if strings.Contains(wwwAuth, "The access token is invalid") {
+			return nil, fmt.Errorf("access token is invalid. Please run 'bgl auth login'")
+		}
+		return nil, fmt.Errorf("authentication failed (status %d). Please run 'bgl auth login'", resp.StatusCode)
+	}
+
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return body, nil
+}
+
+// AddComment adds a comment to an issue.
+func (c *Client) AddComment(issueKeyOrID string, content string) ([]byte, error) {
+	data := url.Values{}
+	data.Set("content", content)
+	return c.doPostRequest("/api/v2/issues/"+issueKeyOrID+"/comments", data)
+}
+
+// GetSpace returns the space domain from the client config.
+func (c *Client) GetSpace() string {
+	return c.cfg.Space
 }
 
 // Issue represents a Backlog issue.
