@@ -27,6 +27,16 @@ This will:
 2. Open your browser for authentication
 3. After successful login, save the access token and refresh token to `~/.config/bgl/config.json`
 
+#### Logout
+
+Logout and remove stored tokens:
+
+```bash
+bgl auth logout
+```
+
+This will remove the access token and refresh token from `~/.config/bgl/config.json`.
+
 ### Other Commands
 
 ```bash

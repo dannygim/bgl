@@ -342,6 +342,28 @@ func exchangeCode(baseURL, code, redirectURI string) (*TokenResponse, error) {
 	return &token, nil
 }
 
+// Logout removes the stored access token and refresh token.
+func Logout() error {
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("failed to load config: %w", err)
+	}
+
+	if cfg.AccessToken == "" && cfg.RefreshToken == "" {
+		return fmt.Errorf("not logged in")
+	}
+
+	cfg.AccessToken = ""
+	cfg.RefreshToken = ""
+
+	if err := cfg.Save(); err != nil {
+		return fmt.Errorf("failed to save config: %w", err)
+	}
+
+	fmt.Println("Logged out successfully.")
+	return nil
+}
+
 // RefreshToken refreshes the access token using the refresh token.
 func RefreshToken() error {
 	cfg, err := config.Load()

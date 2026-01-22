@@ -39,6 +39,7 @@ func printUsage() {
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  auth login      Login to Backlog using OAuth 2.0")
+	fmt.Println("  auth logout     Logout and remove stored tokens")
 	fmt.Println("  help            Show this help message")
 	fmt.Println("  version         Show version information")
 	fmt.Println()
@@ -61,6 +62,11 @@ func handleAuth() {
 			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			os.Exit(1)
 		}
+	case "logout":
+		if err := auth.Logout(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
 	case "-h", "--help", "help":
 		printAuthUsage()
 	default:
@@ -74,5 +80,6 @@ func printAuthUsage() {
 	fmt.Println("Usage: bgl auth <command>")
 	fmt.Println()
 	fmt.Println("Commands:")
-	fmt.Println("  login    Login to Backlog using OAuth 2.0")
+	fmt.Println("  login     Login to Backlog using OAuth 2.0")
+	fmt.Println("  logout    Logout and remove stored tokens")
 }
