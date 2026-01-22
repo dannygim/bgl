@@ -24,6 +24,8 @@ builds:
       - -X main.version={{.Version}}
       - -X main.commit={{.Commit}}
       - -X main.date={{.Date}}
+      - -X github.com/dannygim/bgl/internal/config.ClientID={{ .Env.CLIENT_ID }}
+      - -X github.com/dannygim/bgl/internal/config.ClientSecret={{ .Env.CLIENT_SECRET }}
 
 archives:
   - id: default
