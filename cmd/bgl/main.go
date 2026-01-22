@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/dannygim/bgl/internal/auth"
+	"github.com/dannygim/bgl/internal/comment"
 	"github.com/dannygim/bgl/internal/issue"
 )
 
@@ -27,6 +28,8 @@ func main() {
 		handleAuth()
 	case "issue":
 		handleIssue()
+	case "comment":
+		handleComment()
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", os.Args[1])
 		printUsage()
@@ -44,6 +47,7 @@ func printUsage() {
 	fmt.Println("  auth login              Login to Backlog using OAuth 2.0")
 	fmt.Println("  auth logout             Logout and remove stored tokens")
 	fmt.Println("  issue view [--raw] <issueKey>   View an issue by key or ID")
+	fmt.Println("  comment view [--raw] <issueKey> [commentId]   View comments for an issue")
 	fmt.Println("  help                    Show this help message")
 	fmt.Println("  version                 Show version information")
 	fmt.Println()
@@ -160,6 +164,97 @@ func printIssueViewUsage() {
 	fmt.Println()
 	fmt.Println("Arguments:")
 	fmt.Println("  issueKey    The issue key (e.g., PROJECT-123) or issue ID")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  --raw       Output raw JSON response")
+	fmt.Println("  -h, --help  Show this help message")
+}
+
+func handleComment() {
+	if len(os.Args) < 3 {
+		printCommentUsage()
+		os.Exit(1)
+	}
+
+	switch os.Args[2] {
+	case "view":
+		handleCommentView()
+	case "-h", "--help", "help":
+		printCommentUsage()
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown comment command: %s\n", os.Args[2])
+		printCommentUsage()
+		os.Exit(1)
+	}
+}
+
+func handleCommentView() {
+	// Parse arguments: bgl comment view [--raw] <issueKey> [commentId]
+	args := os.Args[3:]
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "Error: issue key is required")
+		printCommentViewUsage()
+		os.Exit(1)
+	}
+
+	opts := comment.ViewOptions{}
+	var issueKey string
+	var commentID string
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--raw":
+			opts.Raw = true
+		case "-h", "--help":
+			printCommentViewUsage()
+			return
+		default:
+			if issueKey == "" {
+				issueKey = args[i]
+			} else if commentID == "" {
+				commentID = args[i]
+			} else {
+				fmt.Fprintf(os.Stderr, "Error: unexpected argument: %s\n", args[i])
+				printCommentViewUsage()
+				os.Exit(1)
+			}
+		}
+	}
+
+	if issueKey == "" {
+		fmt.Fprintln(os.Stderr, "Error: issue key is required")
+		printCommentViewUsage()
+		os.Exit(1)
+	}
+
+	var err error
+	if commentID != "" {
+		// View single comment
+		err = comment.View(issueKey, commentID, opts)
+	} else {
+		// View comment list
+		err = comment.ViewList(issueKey, opts)
+	}
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func printCommentUsage() {
+	fmt.Println("Usage: bgl comment <command>")
+	fmt.Println()
+	fmt.Println("Commands:")
+	fmt.Println("  view [--raw] <issueKey> [commentId]   View comments for an issue")
+}
+
+func printCommentViewUsage() {
+	fmt.Println("Usage: bgl comment view [options] <issueKey> [commentId]")
+	fmt.Println()
+	fmt.Println("Arguments:")
+	fmt.Println("  issueKey    The issue key (e.g., PROJECT-123) or issue ID")
+	fmt.Println("  commentId   The comment ID (optional, if omitted shows all comments)")
 	fmt.Println()
 	fmt.Println("Options:")
 	fmt.Println("  --raw       Output raw JSON response")

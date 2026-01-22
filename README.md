@@ -59,6 +59,37 @@ To output the raw JSON response:
 bgl issue view --raw PROJECT-123
 ```
 
+### Comment
+
+#### View Comments
+
+View all comments for an issue:
+
+```bash
+bgl comment view PROJECT-123
+```
+
+This displays comments in Markdown format with the following information:
+- Comment Id
+- User (name and email)
+- Datetime
+- Content
+
+Comments are separated by `---`.
+
+To view a specific comment by ID:
+
+```bash
+bgl comment view PROJECT-123 12345
+```
+
+To output the raw JSON response:
+
+```bash
+bgl comment view --raw PROJECT-123
+bgl comment view --raw PROJECT-123 12345
+```
+
 ### Other Commands
 
 ```bash
