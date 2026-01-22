@@ -90,6 +90,35 @@ bgl comment view --raw PROJECT-123
 bgl comment view --raw PROJECT-123 12345
 ```
 
+#### Add Comment
+
+Add a comment to an issue interactively (prompts for message input):
+
+```bash
+bgl comment add PROJECT-123
+```
+
+Add a comment with a message directly:
+
+```bash
+bgl comment add PROJECT-123 "This is my comment"
+```
+
+When providing a message directly, you will be prompted to confirm before adding the comment. To skip the confirmation prompt, use `--yes` or `-y`:
+
+```bash
+bgl comment add --yes PROJECT-123 "This is my comment"
+bgl comment add -y PROJECT-123 "This is my comment"
+```
+
+After successfully adding a comment, the URL to the comment will be displayed.
+
+To output the raw JSON response:
+
+```bash
+bgl comment add --raw PROJECT-123 "This is my comment"
+```
+
 ### Other Commands
 
 ```bash
