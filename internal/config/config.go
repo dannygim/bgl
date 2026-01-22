@@ -17,7 +17,12 @@ type Config struct {
 const configFileName = "config.json"
 
 // GetConfigDir returns the configuration directory path.
+// If XDG_CONFIG_HOME is set, it uses $XDG_CONFIG_HOME/bgl.
+// Otherwise, it falls back to $HOME/.config/bgl.
 func GetConfigDir() (string, error) {
+	if xdgConfigHome := os.Getenv("XDG_CONFIG_HOME"); xdgConfigHome != "" {
+		return filepath.Join(xdgConfigHome, "bgl"), nil
+	}
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
