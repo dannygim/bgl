@@ -37,6 +37,28 @@ bgl auth logout
 
 This will remove the access token and refresh token from `~/.config/bgl/config.json`.
 
+### Issue
+
+#### View Issue
+
+View an issue by its key or ID:
+
+```bash
+bgl issue view PROJECT-123
+```
+
+This displays the issue in Markdown format with the following information:
+- Summary
+- Assignee
+- Status
+- Description
+
+To output the raw JSON response:
+
+```bash
+bgl issue view --raw PROJECT-123
+```
+
 ### Other Commands
 
 ```bash
