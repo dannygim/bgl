@@ -60,6 +60,24 @@ To output the raw JSON response:
 bgl issue view --raw PROJECT-123
 ```
 
+#### Update Issue
+
+Update an issue's status:
+
+```bash
+bgl issue update --status=2 PROJECT-123
+```
+
+This updates the issue status and displays the updated issue in Markdown format (same as `issue view`).
+
+To get the available status IDs for a project, use `bgl status list <projectId>`.
+
+To output the raw JSON response:
+
+```bash
+bgl issue update --raw --status=2 PROJECT-123
+```
+
 ### Comment
 
 #### View Comments

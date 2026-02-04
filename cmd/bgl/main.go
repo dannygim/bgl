@@ -54,6 +54,7 @@ func printUsage() {
 	fmt.Println("  auth login              Login to Backlog using OAuth 2.0")
 	fmt.Println("  auth logout             Logout and remove stored tokens")
 	fmt.Println("  issue view [--raw] <issueKey>   View an issue by key or ID")
+	fmt.Println("  issue update [--raw] --status=<statusId> <issueKey>   Update an issue")
 	fmt.Println("  comment view [--raw] <issueKey> [commentId]   View comments for an issue")
 	fmt.Println("  comment add [--raw] [--yes] <issueKey> [message]   Add a comment to an issue")
 	fmt.Println("  status list [--raw] <projectId>   List statuses for a project")
@@ -110,6 +111,8 @@ func handleIssue() {
 	switch os.Args[2] {
 	case "view":
 		handleIssueView()
+	case "update":
+		handleIssueUpdate()
 	case "-h", "--help", "help":
 		printIssueUsage()
 	default:
@@ -166,6 +169,7 @@ func printIssueUsage() {
 	fmt.Println()
 	fmt.Println("Commands:")
 	fmt.Println("  view [--raw] <issueKey>   View an issue by key or ID")
+	fmt.Println("  update [--raw] --status=<statusId> <issueKey>   Update an issue")
 }
 
 func printIssueViewUsage() {
@@ -177,6 +181,69 @@ func printIssueViewUsage() {
 	fmt.Println("Options:")
 	fmt.Println("  --raw       Output raw JSON response")
 	fmt.Println("  -h, --help  Show this help message")
+}
+
+func handleIssueUpdate() {
+	// Parse arguments: bgl issue update [--raw] --status=<statusId> <issueKey>
+	args := os.Args[3:]
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "Error: issue key is required")
+		printIssueUpdateUsage()
+		os.Exit(1)
+	}
+
+	opts := issue.UpdateOptions{}
+	var issueKey string
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch {
+		case arg == "--raw":
+			opts.Raw = true
+		case arg == "-h" || arg == "--help":
+			printIssueUpdateUsage()
+			return
+		case len(arg) > 9 && arg[:9] == "--status=":
+			opts.StatusID = arg[9:]
+		default:
+			if issueKey == "" {
+				issueKey = arg
+			} else {
+				fmt.Fprintf(os.Stderr, "Error: unexpected argument: %s\n", arg)
+				printIssueUpdateUsage()
+				os.Exit(1)
+			}
+		}
+	}
+
+	if issueKey == "" {
+		fmt.Fprintln(os.Stderr, "Error: issue key is required")
+		printIssueUpdateUsage()
+		os.Exit(1)
+	}
+
+	if opts.StatusID == "" {
+		fmt.Fprintln(os.Stderr, "Error: --status is required")
+		printIssueUpdateUsage()
+		os.Exit(1)
+	}
+
+	if err := issue.Update(issueKey, opts); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func printIssueUpdateUsage() {
+	fmt.Println("Usage: bgl issue update [options] <issueKey>")
+	fmt.Println()
+	fmt.Println("Arguments:")
+	fmt.Println("  issueKey          The issue key (e.g., PROJECT-123) or issue ID")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  --status=<id>     Status ID to set (required)")
+	fmt.Println("  --raw             Output raw JSON response")
+	fmt.Println("  -h, --help        Show this help message")
 }
 
 func handleComment() {
