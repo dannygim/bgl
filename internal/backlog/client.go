@@ -101,16 +101,19 @@ func (c *Client) doRequest(method, path string) ([]byte, error) {
 }
 
 // GetIssue retrieves an issue by its key or ID.
+// ref: https://developer.nulab.com/docs/backlog/api/2/get-issue/
 func (c *Client) GetIssue(issueKeyOrID string) ([]byte, error) {
 	return c.doRequest("GET", "/api/v2/issues/"+issueKeyOrID)
 }
 
 // GetComments retrieves comments for an issue.
+// ref: https://developer.nulab.com/docs/backlog/api/2/get-comment-list/
 func (c *Client) GetComments(issueKeyOrID string) ([]byte, error) {
 	return c.doRequest("GET", "/api/v2/issues/"+issueKeyOrID+"/comments")
 }
 
 // GetComment retrieves a specific comment by ID.
+// ref: https://developer.nulab.com/docs/backlog/api/2/get-comment/
 func (c *Client) GetComment(issueKeyOrID string, commentID string) ([]byte, error) {
 	return c.doRequest("GET", "/api/v2/issues/"+issueKeyOrID+"/comments/"+commentID)
 }
@@ -168,6 +171,7 @@ func (c *Client) doPostRequest(path string, data url.Values) ([]byte, error) {
 }
 
 // AddComment adds a comment to an issue.
+// ref: https://developer.nulab.com/docs/backlog/api/2/add-comment/
 func (c *Client) AddComment(issueKeyOrID string, content string) ([]byte, error) {
 	data := url.Values{}
 	data.Set("content", content)
@@ -181,6 +185,7 @@ func (c *Client) GetSpace() string {
 
 // Issue represents a Backlog issue.
 type Issue struct {
+	ProjectId   int       `json:"projectId"`
 	Summary     string    `json:"summary"`
 	Description string    `json:"description"`
 	Assignee    *Assignee `json:"assignee"`
@@ -211,23 +216,23 @@ func ParseIssue(data []byte) (*Issue, error) {
 func FormatIssueMarkdown(issue *Issue) string {
 	var sb strings.Builder
 
-	fmt.Fprintf(&sb, "## Summary\n%s\n\n", issue.Summary)
-
-	sb.WriteString("## Assignee\n")
-	if issue.Assignee != nil {
-		fmt.Fprintf(&sb, "%s<%s>\n\n", issue.Assignee.Name, issue.Assignee.MailAddress)
-	} else {
-		sb.WriteString("(unassigned)\n\n")
-	}
-
-	sb.WriteString("## Status\n")
+	sb.WriteString("## Metadata\n")
+	fmt.Fprintf(&sb, "- Project ID: %d\n", issue.ProjectId)
 	if issue.Status != nil {
-		fmt.Fprintf(&sb, "%s\n\n", issue.Status.Name)
+		fmt.Fprintf(&sb, "- Status: %s\n", issue.Status.Name)
 	} else {
-		sb.WriteString("(unknown)\n\n")
+		sb.WriteString("- Status: (unknown)\n")
 	}
+	if issue.Assignee != nil {
+		fmt.Fprintf(&sb, "- Assignee: %s<%s>\n", issue.Assignee.Name, issue.Assignee.MailAddress)
+	} else {
+		sb.WriteString("- Assignee: (unassigned)\n")
+	}
+	sb.WriteString("\n")
 
-	sb.WriteString("## Description\n")
+	fmt.Fprintf(&sb, "## Summary\n\n%s\n\n", issue.Summary)
+
+	sb.WriteString("## Description\n\n")
 	if issue.Description != "" {
 		sb.WriteString(issue.Description)
 	} else {
