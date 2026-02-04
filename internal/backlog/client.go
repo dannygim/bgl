@@ -224,7 +224,7 @@ func FormatIssueMarkdown(issue *Issue) string {
 		sb.WriteString("- Status: (unknown)\n")
 	}
 	if issue.Assignee != nil {
-		fmt.Fprintf(&sb, "- Assignee: %s<%s>\n", issue.Assignee.Name, issue.Assignee.MailAddress)
+		fmt.Fprintf(&sb, "- Assignee: %s`<%s>`\n", issue.Assignee.Name, issue.Assignee.MailAddress)
 	} else {
 		sb.WriteString("- Assignee: (unassigned)\n")
 	}
@@ -283,7 +283,7 @@ func FormatCommentMarkdown(comment *Comment) string {
 
 	sb.WriteString("**User:** ")
 	if comment.CreatedUser != nil {
-		fmt.Fprintf(&sb, "%s<%s>\n\n", comment.CreatedUser.Name, comment.CreatedUser.MailAddress)
+		fmt.Fprintf(&sb, "%s`<%s>`\n\n", comment.CreatedUser.Name, comment.CreatedUser.MailAddress)
 	} else {
 		sb.WriteString("(unknown)\n\n")
 	}
