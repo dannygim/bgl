@@ -120,6 +120,30 @@ To output the raw JSON response:
 bgl comment add --raw PROJECT-123 "This is my comment"
 ```
 
+### Status
+
+#### List Statuses
+
+List all statuses for a project:
+
+```bash
+bgl status list PROJECT
+```
+
+This displays the project statuses in Markdown format:
+
+```
+## Status
+- Open (id: 1)
+- Close (id: 2)
+```
+
+To output the raw JSON response:
+
+```bash
+bgl status list --raw PROJECT
+```
+
 ### Other Commands
 
 ```bash

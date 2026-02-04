@@ -7,6 +7,7 @@ import (
 	"github.com/dannygim/bgl/internal/auth"
 	"github.com/dannygim/bgl/internal/comment"
 	"github.com/dannygim/bgl/internal/issue"
+	"github.com/dannygim/bgl/internal/status"
 )
 
 var (
@@ -34,6 +35,8 @@ func main() {
 		handleIssue()
 	case "comment":
 		handleComment()
+	case "status":
+		handleStatus()
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", os.Args[1])
 		printUsage()
@@ -53,6 +56,7 @@ func printUsage() {
 	fmt.Println("  issue view [--raw] <issueKey>   View an issue by key or ID")
 	fmt.Println("  comment view [--raw] <issueKey> [commentId]   View comments for an issue")
 	fmt.Println("  comment add [--raw] [--yes] <issueKey> [message]   Add a comment to an issue")
+	fmt.Println("  status list [--raw] <projectId>   List statuses for a project")
 	fmt.Println("  help                    Show this help message")
 	fmt.Println("  version                 Show version information")
 	fmt.Println()
@@ -323,6 +327,84 @@ func printCommentViewUsage() {
 	fmt.Println("Arguments:")
 	fmt.Println("  issueKey    The issue key (e.g., PROJECT-123) or issue ID")
 	fmt.Println("  commentId   The comment ID (optional, if omitted shows all comments)")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  --raw       Output raw JSON response")
+	fmt.Println("  -h, --help  Show this help message")
+}
+
+func handleStatus() {
+	if len(os.Args) < 3 {
+		printStatusUsage()
+		os.Exit(1)
+	}
+
+	switch os.Args[2] {
+	case "list":
+		handleStatusList()
+	case "-h", "--help", "help":
+		printStatusUsage()
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown status command: %s\n", os.Args[2])
+		printStatusUsage()
+		os.Exit(1)
+	}
+}
+
+func handleStatusList() {
+	// Parse arguments: bgl status list [--raw] <projectId>
+	args := os.Args[3:]
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "Error: project ID is required")
+		printStatusListUsage()
+		os.Exit(1)
+	}
+
+	opts := status.ListOptions{}
+	var projectID string
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--raw":
+			opts.Raw = true
+		case "-h", "--help":
+			printStatusListUsage()
+			return
+		default:
+			if projectID == "" {
+				projectID = args[i]
+			} else {
+				fmt.Fprintf(os.Stderr, "Error: unexpected argument: %s\n", args[i])
+				printStatusListUsage()
+				os.Exit(1)
+			}
+		}
+	}
+
+	if projectID == "" {
+		fmt.Fprintln(os.Stderr, "Error: project ID is required")
+		printStatusListUsage()
+		os.Exit(1)
+	}
+
+	if err := status.List(projectID, opts); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func printStatusUsage() {
+	fmt.Println("Usage: bgl status <command>")
+	fmt.Println()
+	fmt.Println("Commands:")
+	fmt.Println("  list [--raw] <projectId>   List statuses for a project")
+}
+
+func printStatusListUsage() {
+	fmt.Println("Usage: bgl status list [options] <projectId>")
+	fmt.Println()
+	fmt.Println("Arguments:")
+	fmt.Println("  projectId   The project ID or project key")
 	fmt.Println()
 	fmt.Println("Options:")
 	fmt.Println("  --raw       Output raw JSON response")

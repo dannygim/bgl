@@ -314,3 +314,39 @@ func FormatCommentsMarkdown(comments []Comment) string {
 
 	return sb.String()
 }
+
+// GetProjectStatuses retrieves the status list for a project.
+// ref: https://developer.nulab.com/docs/backlog/api/2/get-status-list-of-project/
+func (c *Client) GetProjectStatuses(projectIDOrKey string) ([]byte, error) {
+	return c.doRequest("GET", "/api/v2/projects/"+projectIDOrKey+"/statuses")
+}
+
+// ProjectStatus represents a status in a Backlog project.
+type ProjectStatus struct {
+	ID           int    `json:"id"`
+	ProjectID    int    `json:"projectId"`
+	Name         string `json:"name"`
+	Color        string `json:"color"`
+	DisplayOrder int    `json:"displayOrder"`
+}
+
+// ParseProjectStatuses parses the JSON response into a slice of ProjectStatus structs.
+func ParseProjectStatuses(data []byte) ([]ProjectStatus, error) {
+	var statuses []ProjectStatus
+	if err := json.Unmarshal(data, &statuses); err != nil {
+		return nil, fmt.Errorf("failed to parse statuses: %w", err)
+	}
+	return statuses, nil
+}
+
+// FormatProjectStatusesMarkdown formats a list of project statuses as Markdown.
+func FormatProjectStatusesMarkdown(statuses []ProjectStatus) string {
+	var sb strings.Builder
+
+	sb.WriteString("## Status\n")
+	for _, status := range statuses {
+		fmt.Fprintf(&sb, "- %s (id: %d)\n", status.Name, status.ID)
+	}
+
+	return sb.String()
+}
