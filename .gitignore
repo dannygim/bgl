@@ -37,4 +37,5 @@ go.work.sum
 
 # Agent
 .claude
+.agents
 .agent
