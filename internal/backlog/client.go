@@ -236,6 +236,12 @@ func (c *Client) UpdateIssue(issueKeyOrID string, data url.Values) ([]byte, erro
 	return c.doPatchRequest("/api/v2/issues/"+issueKeyOrID, data)
 }
 
+// AddIssue creates a new issue.
+// ref: https://developer.nulab.com/docs/backlog/api/2/add-issue/
+func (c *Client) AddIssue(data url.Values) ([]byte, error) {
+	return c.doPostRequest("/api/v2/issues", data)
+}
+
 // GetSpace returns the space domain from the client config.
 func (c *Client) GetSpace() string {
 	return c.cfg.Space
@@ -244,6 +250,7 @@ func (c *Client) GetSpace() string {
 // Issue represents a Backlog issue.
 type Issue struct {
 	ProjectId   int       `json:"projectId"`
+	IssueKey    string    `json:"issueKey"`
 	Summary     string    `json:"summary"`
 	Description string    `json:"description"`
 	Assignee    *Assignee `json:"assignee"`
@@ -407,4 +414,175 @@ func FormatProjectStatusesMarkdown(statuses []ProjectStatus) string {
 	}
 
 	return sb.String()
+}
+
+// GetCategories retrieves the category list for a project.
+// ref: https://developer.nulab.com/docs/backlog/api/2/get-category-list/
+func (c *Client) GetCategories(projectIDOrKey string) ([]byte, error) {
+	return c.doRequest("GET", "/api/v2/projects/"+projectIDOrKey+"/categories")
+}
+
+// Category represents a category in a Backlog project.
+type Category struct {
+	ID           int    `json:"id"`
+	ProjectID    int    `json:"projectId"`
+	Name         string `json:"name"`
+	DisplayOrder int    `json:"displayOrder"`
+}
+
+// ParseCategories parses the JSON response into a slice of Category structs.
+func ParseCategories(data []byte) ([]Category, error) {
+	var categories []Category
+	if err := json.Unmarshal(data, &categories); err != nil {
+		return nil, fmt.Errorf("failed to parse categories: %w", err)
+	}
+	return categories, nil
+}
+
+// FormatCategoriesMarkdown formats a list of categories as Markdown.
+func FormatCategoriesMarkdown(categories []Category) string {
+	var sb strings.Builder
+
+	sb.WriteString("## Category\n")
+	for _, category := range categories {
+		fmt.Fprintf(&sb, "- %s (id: %d)\n", category.Name, category.ID)
+	}
+
+	return sb.String()
+}
+
+// GetVersions retrieves the version/milestone list for a project.
+// ref: https://developer.nulab.com/docs/backlog/api/2/get-version-milestone-list/
+func (c *Client) GetVersions(projectIDOrKey string) ([]byte, error) {
+	return c.doRequest("GET", "/api/v2/projects/"+projectIDOrKey+"/versions")
+}
+
+// Version represents a version/milestone in a Backlog project.
+type Version struct {
+	ID             int    `json:"id"`
+	ProjectID      int    `json:"projectId"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	StartDate      string `json:"startDate"`
+	ReleaseDueDate string `json:"releaseDueDate"`
+	Archived       bool   `json:"archived"`
+	DisplayOrder   int    `json:"displayOrder"`
+}
+
+// ParseVersions parses the JSON response into a slice of Version structs.
+func ParseVersions(data []byte) ([]Version, error) {
+	var versions []Version
+	if err := json.Unmarshal(data, &versions); err != nil {
+		return nil, fmt.Errorf("failed to parse versions: %w", err)
+	}
+	return versions, nil
+}
+
+// formatDate trims a Backlog datetime (e.g. 2024-01-01T00:00:00Z) to its date part.
+func formatDate(s string) string {
+	if len(s) >= 10 {
+		return s[:10]
+	}
+	return s
+}
+
+// FormatVersionsMarkdown formats a list of versions/milestones as Markdown.
+func FormatVersionsMarkdown(versions []Version) string {
+	var sb strings.Builder
+
+	sb.WriteString("## Version/Milestone\n")
+	for _, version := range versions {
+		fmt.Fprintf(&sb, "- %s (id: %d)", version.Name, version.ID)
+		if version.StartDate != "" {
+			fmt.Fprintf(&sb, ", start: %s", formatDate(version.StartDate))
+		}
+		if version.ReleaseDueDate != "" {
+			fmt.Fprintf(&sb, ", due: %s", formatDate(version.ReleaseDueDate))
+		}
+		if version.Archived {
+			sb.WriteString(", archived")
+		}
+		sb.WriteString("\n")
+	}
+
+	return sb.String()
+}
+
+// GetIssueTypes retrieves the issue type list for a project.
+// ref: https://developer.nulab.com/docs/backlog/api/2/get-issue-type-list/
+func (c *Client) GetIssueTypes(projectIDOrKey string) ([]byte, error) {
+	return c.doRequest("GET", "/api/v2/projects/"+projectIDOrKey+"/issueTypes")
+}
+
+// IssueType represents an issue type in a Backlog project.
+type IssueType struct {
+	ID           int    `json:"id"`
+	ProjectID    int    `json:"projectId"`
+	Name         string `json:"name"`
+	Color        string `json:"color"`
+	DisplayOrder int    `json:"displayOrder"`
+}
+
+// ParseIssueTypes parses the JSON response into a slice of IssueType structs.
+func ParseIssueTypes(data []byte) ([]IssueType, error) {
+	var issueTypes []IssueType
+	if err := json.Unmarshal(data, &issueTypes); err != nil {
+		return nil, fmt.Errorf("failed to parse issue types: %w", err)
+	}
+	return issueTypes, nil
+}
+
+// FormatIssueTypesMarkdown formats a list of issue types as Markdown.
+func FormatIssueTypesMarkdown(issueTypes []IssueType) string {
+	var sb strings.Builder
+
+	sb.WriteString("## Issue Type\n")
+	for _, issueType := range issueTypes {
+		fmt.Fprintf(&sb, "- %s (id: %d)\n", issueType.Name, issueType.ID)
+	}
+
+	return sb.String()
+}
+
+// GetPriorities retrieves the priority list.
+// ref: https://developer.nulab.com/docs/backlog/api/2/get-priority-list/
+func (c *Client) GetPriorities() ([]byte, error) {
+	return c.doRequest("GET", "/api/v2/priorities")
+}
+
+// Priority represents a priority in Backlog.
+type Priority struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+// ParsePriorities parses the JSON response into a slice of Priority structs.
+func ParsePriorities(data []byte) ([]Priority, error) {
+	var priorities []Priority
+	if err := json.Unmarshal(data, &priorities); err != nil {
+		return nil, fmt.Errorf("failed to parse priorities: %w", err)
+	}
+	return priorities, nil
+}
+
+// GetProject retrieves a project by its ID or key.
+// ref: https://developer.nulab.com/docs/backlog/api/2/get-project/
+func (c *Client) GetProject(projectIDOrKey string) ([]byte, error) {
+	return c.doRequest("GET", "/api/v2/projects/"+projectIDOrKey)
+}
+
+// Project represents a Backlog project.
+type Project struct {
+	ID         int    `json:"id"`
+	ProjectKey string `json:"projectKey"`
+	Name       string `json:"name"`
+}
+
+// ParseProject parses the JSON response into a Project struct.
+func ParseProject(data []byte) (*Project, error) {
+	var project Project
+	if err := json.Unmarshal(data, &project); err != nil {
+		return nil, fmt.Errorf("failed to parse project: %w", err)
+	}
+	return &project, nil
 }

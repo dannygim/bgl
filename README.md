@@ -60,15 +60,52 @@ To output the raw JSON response:
 bgl issue view --raw PROJECT-123
 ```
 
+#### Add Issue
+
+Create a new issue in a project:
+
+```bash
+bgl issue add --project=PROJECT
+```
+
+Required fields not given as options are prompted interactively: the summary is entered as text, and the issue type and priority are selected from lists fetched from the project.
+
+All fields can also be specified as options:
+
+```bash
+bgl issue add --project=PROJECT --summary="Fix login bug" --type=100 --priority=3 \
+  --description="Steps to reproduce..." --assignee=12345 --parent=98765 \
+  --start-date=2026-07-01 --due-date=2026-07-31 \
+  --category=10,11 --milestone=20 --version=30
+```
+
+`--parent` takes the numeric ID of the parent issue (not an issue key like `PROJECT-123`).
+
+To get the available IDs, use `bgl issuetype list`, `bgl category list`, and `bgl milestone list`.
+
+You will be prompted to confirm before creating the issue. To skip the confirmation prompt, use `--yes` or `-y`.
+
+After successfully creating an issue, its key and URL will be displayed.
+
+To output the raw JSON response:
+
+```bash
+bgl issue add --raw --yes --project=PROJECT --summary="Fix login bug" --type=100 --priority=3
+```
+
 #### Update Issue
 
-Update an issue's status:
+Update an issue's fields:
 
 ```bash
 bgl issue update --status=2 PROJECT-123
+bgl issue update --summary="New summary" --priority=2 PROJECT-123
+bgl issue update --milestone=20,21 --comment="Updated milestones" PROJECT-123
 ```
 
-This updates the issue status and displays the updated issue in Markdown format (same as `issue view`).
+Available options: `--status`, `--summary`, `--description`, `--type`, `--priority`, `--assignee`, `--start-date`, `--due-date`, `--category`, `--milestone`, `--version`, and `--comment`. At least one is required. `--category`, `--milestone`, and `--version` accept comma-separated IDs.
+
+This updates the issue and displays the updated issue in Markdown format (same as `issue view`).
 
 To get the available status IDs for a project, use `bgl status list <projectId>`.
 
@@ -160,6 +197,78 @@ To output the raw JSON response:
 
 ```bash
 bgl status list --raw PROJECT
+```
+
+### Category
+
+#### List Categories
+
+List all categories for a project:
+
+```bash
+bgl category list PROJECT
+```
+
+This displays the project categories in Markdown format:
+
+```
+## Category
+- Frontend (id: 10)
+- Backend (id: 11)
+```
+
+To output the raw JSON response:
+
+```bash
+bgl category list --raw PROJECT
+```
+
+### Milestone
+
+#### List Versions/Milestones
+
+List all versions/milestones for a project:
+
+```bash
+bgl milestone list PROJECT
+```
+
+This displays the project versions/milestones in Markdown format, including start dates, due dates, and archived status when set:
+
+```
+## Version/Milestone
+- v1.0 (id: 20), start: 2026-07-01, due: 2026-07-31
+- v0.9 (id: 21), archived
+```
+
+To output the raw JSON response:
+
+```bash
+bgl milestone list --raw PROJECT
+```
+
+### Issue Type
+
+#### List Issue Types
+
+List all issue types for a project:
+
+```bash
+bgl issuetype list PROJECT
+```
+
+This displays the project issue types in Markdown format:
+
+```
+## Issue Type
+- Bug (id: 100)
+- Task (id: 101)
+```
+
+To output the raw JSON response:
+
+```bash
+bgl issuetype list --raw PROJECT
 ```
 
 ### Other Commands
