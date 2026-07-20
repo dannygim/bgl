@@ -175,6 +175,44 @@ To output the raw JSON response:
 bgl comment add --raw PROJECT-123 "This is my comment"
 ```
 
+### Attachment
+
+#### List Attachments
+
+List all attachments for an issue:
+
+```bash
+bgl attachment list PROJECT-123
+```
+
+This displays the issue attachments in Markdown format:
+
+```
+## Attachment
+- design.png (id: 100, size: 12345 bytes)
+- spec.pdf (id: 101, size: 67890 bytes)
+```
+
+To output the raw JSON response:
+
+```bash
+bgl attachment list --raw PROJECT-123
+```
+
+#### Download Attachment
+
+Download an attachment by ID (see `bgl attachment list` for IDs):
+
+```bash
+bgl attachment download PROJECT-123 100
+```
+
+The file is saved to the current directory with its original filename. To save it to a different path, use `-o` or `--output`:
+
+```bash
+bgl attachment download -o ./downloads/design.png PROJECT-123 100
+```
+
 ### Status
 
 #### List Statuses
