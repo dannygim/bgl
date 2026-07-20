@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dannygim/bgl/internal/attachment"
 	"github.com/dannygim/bgl/internal/auth"
 	"github.com/dannygim/bgl/internal/category"
 	"github.com/dannygim/bgl/internal/comment"
@@ -39,6 +40,8 @@ func main() {
 		handleIssue()
 	case "comment":
 		handleComment()
+	case "attachment":
+		handleAttachment()
 	case "status":
 		handleStatus()
 	case "category":
@@ -68,6 +71,8 @@ func printUsage() {
 	fmt.Println("  issue update [--raw] [options] <issueKey>   Update an issue")
 	fmt.Println("  comment view [--raw] <issueKey> [commentId]   View comments for an issue")
 	fmt.Println("  comment add [--raw] [--yes] <issueKey> [message]   Add a comment to an issue")
+	fmt.Println("  attachment list [--raw] <issueKey>   List attachments for an issue")
+	fmt.Println("  attachment download [-o <path>] <issueKey> <attachmentId>   Download an issue's attachment")
 	fmt.Println("  status list [--raw] <projectId>   List statuses for a project")
 	fmt.Println("  category list [--raw] <projectId>   List categories for a project")
 	fmt.Println("  milestone list [--raw] <projectId>   List versions/milestones for a project")
@@ -522,6 +527,153 @@ func printCommentViewUsage() {
 	fmt.Println("Options:")
 	fmt.Println("  --raw       Output raw JSON response")
 	fmt.Println("  -h, --help  Show this help message")
+}
+
+func handleAttachment() {
+	if len(os.Args) < 3 {
+		printAttachmentUsage()
+		os.Exit(1)
+	}
+
+	switch os.Args[2] {
+	case "list":
+		handleAttachmentList()
+	case "download":
+		handleAttachmentDownload()
+	case "-h", "--help", "help":
+		printAttachmentUsage()
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown attachment command: %s\n", os.Args[2])
+		printAttachmentUsage()
+		os.Exit(1)
+	}
+}
+
+func handleAttachmentList() {
+	// Parse arguments: bgl attachment list [--raw] <issueKey>
+	args := os.Args[3:]
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "Error: issue key is required")
+		printAttachmentListUsage()
+		os.Exit(1)
+	}
+
+	opts := attachment.ListOptions{}
+	var issueKey string
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--raw":
+			opts.Raw = true
+		case "-h", "--help":
+			printAttachmentListUsage()
+			return
+		default:
+			if issueKey == "" {
+				issueKey = args[i]
+			} else {
+				fmt.Fprintf(os.Stderr, "Error: unexpected argument: %s\n", args[i])
+				printAttachmentListUsage()
+				os.Exit(1)
+			}
+		}
+	}
+
+	if issueKey == "" {
+		fmt.Fprintln(os.Stderr, "Error: issue key is required")
+		printAttachmentListUsage()
+		os.Exit(1)
+	}
+
+	if err := attachment.List(issueKey, opts); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func handleAttachmentDownload() {
+	// Parse arguments: bgl attachment download [-o <path>] <issueKey> <attachmentId>
+	args := os.Args[3:]
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "Error: issue key and attachment ID are required")
+		printAttachmentDownloadUsage()
+		os.Exit(1)
+	}
+
+	opts := attachment.DownloadOptions{}
+	var issueKey string
+	var attachmentID string
+
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		switch {
+		case arg == "-o" || arg == "--output":
+			if i+1 >= len(args) {
+				fmt.Fprintf(os.Stderr, "Error: %s requires a path\n", arg)
+				printAttachmentDownloadUsage()
+				os.Exit(1)
+			}
+			i++
+			opts.Output = args[i]
+		case strings.HasPrefix(arg, "--output="):
+			opts.Output = strings.TrimPrefix(arg, "--output=")
+		case arg == "-h" || arg == "--help":
+			printAttachmentDownloadUsage()
+			return
+		default:
+			if issueKey == "" {
+				issueKey = arg
+			} else if attachmentID == "" {
+				attachmentID = arg
+			} else {
+				fmt.Fprintf(os.Stderr, "Error: unexpected argument: %s\n", arg)
+				printAttachmentDownloadUsage()
+				os.Exit(1)
+			}
+		}
+	}
+
+	if issueKey == "" || attachmentID == "" {
+		fmt.Fprintln(os.Stderr, "Error: issue key and attachment ID are required")
+		printAttachmentDownloadUsage()
+		os.Exit(1)
+	}
+
+	if err := attachment.Download(issueKey, attachmentID, opts); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func printAttachmentUsage() {
+	fmt.Println("Usage: bgl attachment <command>")
+	fmt.Println()
+	fmt.Println("Commands:")
+	fmt.Println("  list [--raw] <issueKey>   List attachments for an issue")
+	fmt.Println("  download [-o <path>] <issueKey> <attachmentId>   Download an issue's attachment")
+}
+
+func printAttachmentListUsage() {
+	fmt.Println("Usage: bgl attachment list [options] <issueKey>")
+	fmt.Println()
+	fmt.Println("Arguments:")
+	fmt.Println("  issueKey    The issue key (e.g., PROJECT-123) or issue ID")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  --raw       Output raw JSON response")
+	fmt.Println("  -h, --help  Show this help message")
+}
+
+func printAttachmentDownloadUsage() {
+	fmt.Println("Usage: bgl attachment download [options] <issueKey> <attachmentId>")
+	fmt.Println()
+	fmt.Println("Arguments:")
+	fmt.Println("  issueKey        The issue key (e.g., PROJECT-123) or issue ID")
+	fmt.Println("  attachmentId    The attachment ID (see 'bgl attachment list')")
+	fmt.Println()
+	fmt.Println("Options:")
+	fmt.Println("  -o, --output=<path>   Save the file to the given path (default: original filename)")
+	fmt.Println("  -h, --help            Show this help message")
 }
 
 func handleStatus() {
